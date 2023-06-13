@@ -1,0 +1,54 @@
+name: NodeJS install
+description: Install NodeJS and dependencies
+
+outputs:
+  node_version:
+    description: NodeJs version
+    value: ${{ steps.node_version.outputs.node_version }}
+
+runs:
+  using: composite
+  steps:
+    - name: 📑 Read .nvmrc
+      id: node_version
+      shell: bash
+      run: echo "::set-output name=node_version::$(cat .nvmrc)"
+
+    - name: ⚙️ Setup NodeJS
+      uses: actions/setup-node@v3
+      with:
+        node-version-file: ".nvmrc"
+        cache: "npm"
+
+    - name: 🙈 Cache node modules
+      id: node-cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          .npmrc
+          node_modules
+        key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+
+    - name: 🔒 Retrieve Vault secrets
+      if: ${{ !steps.node-cache.outputs.cache-hit }}
+      uses: adeo/vault-action@v1.2.1
+      with:
+        vault-namespace: adeo/opus-catalogs-broadcast
+        vault-jwt-role-name: ${{ github.event.repository.name }}
+        vault-secrets: | # pragma: allowlist secret
+          secret/data/github-actions artifactory_reader_user_name | ARTIFACTORY_USERNAME ;
+          secret/data/github-actions artifactory_reader_user_token | ARTIFACTORY_PASSWORD ;
+
+    - name: 🔑 Generate npmrc
+      if: ${{ !steps.node-cache.outputs.cache-hit }}
+      shell: bash
+      run: |
+        echo "@adeo:registry=https://adeo.jfrog.io/artifactory/api/npm/npm/" > .npmrc
+        echo "//adeo.jfrog.io/artifactory/api/npm/npm/:username=${ARTIFACTORY_USERNAME}" >> .npmrc
+        echo "//adeo.jfrog.io/artifactory/api/npm/npm/:_password=$(echo -n ${ARTIFACTORY_PASSWORD} | base64 -w0)" >> .npmrc
+        echo "//adeo.jfrog.io/artifactory/api/npm/npm/:always-auth=true" >> .npmrc
+
+    - name: 📦 Install dependencies
+      if: ${{ !steps.node-cache.outputs.cache-hit }}
+      shell: bash
+      run: npm ci --ignore-scripts

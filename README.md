@@ -1,2 +1,3 @@
-# reporting-action
-Github Action to execute a script a publish the reporting to Slack with an attached file.
+# Reporting Github Action to Slack
+
+This is a github action to execute a script and publish the reporting to Slack with an attached file.

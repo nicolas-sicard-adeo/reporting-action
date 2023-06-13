@@ -1,0 +1,32 @@
+name: Get Version
+description: Get Version for Turbine And Jfrog
+
+inputs:
+  reference:
+    description: "Git Reference (<branch name> for branches and <tag name> for tags)"
+    required: true
+
+outputs:
+  version:
+    description: name of the version
+    value: ${{ steps.version-name.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: 📋 Get version name
+      id: version-name
+      uses: actions/github-script@v6
+      env:
+        reference: ${{ inputs.reference }}
+      with:
+        script: |
+          const TURBINE_MAX_CHAR = 63;
+          const TURBINE_PREFIX_BU_SIZE = 5;
+          const VERSION_MAX_LENGTH = TURBINE_MAX_CHAR - TURBINE_PREFIX_BU_SIZE;
+          const { reference } = process.env;
+          if(reference.match(/^([0-9]+)\.([0-9]+)\.([0-9]+)?$/)) {
+            core.setOutput("version", reference);
+          } else {
+            core.setOutput("version", reference.split("/").join("-").slice(0, VERSION_MAX_LENGTH));
+          }

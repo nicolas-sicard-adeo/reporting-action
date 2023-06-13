@@ -1,0 +1,26 @@
+{
+  "name": "reporting-action",
+  "version": "1.0.0",
+  "description": "This is a github action to execute a script and publish the reporting to Slack with an attached file.",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node dist/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicolas-sicard-adeo/reporting-action.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nicolas-sicard-adeo/reporting-action/issues"
+  },
+  "homepage": "https://github.com/nicolas-sicard-adeo/reporting-action#readme",
+  "devDependencies": {
+    "@tsconfig/node16": "1.0.3",
+    "@types/node": "^20.3.1",
+    "typescript": "5.1.3"
+  }
+}

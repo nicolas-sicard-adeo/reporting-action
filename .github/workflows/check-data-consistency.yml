@@ -1,0 +1,62 @@
+name: Check data consistency
+
+on:
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  setup-environment:
+    name: Setup Testing Environment
+    runs-on: [ self-hosted, Linux, standard ]
+
+    steps:
+      - name: ⬇️ Check out repository
+        uses: actions/checkout@v3
+
+      - name: 🛠️ Install NodeJS & dependencies
+        id: node
+        uses: ./.github/actions/node-install
+
+      - name: 🐳 Check Docker image
+        run: docker manifest inspect node:${{ steps.node.outputs.node_version }}-alpine | grep amd64 > /dev/null
+
+  generate-report:
+    name: Execute script and generate report
+    runs-on: [self-hosted, Linux, standard]
+    needs: [setup-environment]
+
+    steps:
+      - name: ⬇️ Check out repository
+        uses: actions/checkout@v3
+
+      - name: 🛠️ Install NodeJS & dependencies
+        uses: ./.github/actions/node-install
+
+      - name: 🔎 Run script
+        run: npm run build && npm run start
+
+  slack_notif:
+    name: Slack reporting
+    runs-on: [self-hosted, Linux, standard]
+    needs: [generate-report]
+
+    steps:
+      - name: 📢 Send Slack notification
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          channel-id: 'test-cb-reporting'
+          slack-message: "GitHub build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+          payload-file-path: "./test.json"
+#          payload: |
+#            {
+#              "team": "Catalogs Broadcast",
+#              "contact": "#ccdp-oexp-catalogs-broadcast",
+#              "subject": "Check data consistency (${{ inputs.bu_name }} ${{ inputs.environment }})",
+#              "description": "${{ steps.release.outputs.description }}",
+#              "project": "- Catalogs Broadcast\n- Product and Decision",
+#              "risk": "${{ steps.release.outputs.risk }}",
+#              "unavailability": "No",
+#              "date": "Now"
+#            }
